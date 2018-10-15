@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+    <style type="text/css">
+      .chat {
+        height: 500px;
+        overflow-y: auto;
+      }
+
+      div.from, div.message {
+        padding: 5px 10px;
+      }
+
+      div.from {
+        display: inline-block;
+        width: 50px;
+        font-weight: bold;
+      }
+
+      div.message {
+        display: inline-block;
+        width: 600px;
+      }
+    </style>
+    <script src="/jquery/jquery.min.js" charset="utf-8"></script>
+    <script src="/socket.io/socket.io.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      $().ready(function() {
+        // Socket에 연결하기
+        const socket = io.connect();
+
+        // emit ==> Event Call
+        socket.emit("enter_room", {
+          roomName: "<%=data.room_name%>",
+          me: {
+            id: "<%=data.me.id%>",
+            name: "<%=data.me.name%>",
+            point: "<%=data.me.point%>"
+          }
+        });
+
+        // 누구님이 입장하셨습니다. 를 보여주기
+        socket.on("welcome", (data) => {
+          const welcomeMessage = $(`<div>${data.message}</div>`);
+          $(".chat").append(welcomeMessage);
+          $(".chat").scrollTop(document.querySelector(".chat").scrollHeight);
+        });
+
+        // 채팅내용 전달받기
+        socket.on("receive", (data) => {
+
+          let style = "";
+          if(data.to) {
+            style = "style='color: #F00';";
+          }
+
+          const chatMessage = $(`<div ${style}>
+              <div class="from" data-id="${data.me.id}">${data.me.name}</div>
+              <div class="message">${data.message}</div>
+            </div>`);
+          $(".chat").append(chatMessage);
+          $(".chat").scrollTop(document.querySelector(".chat").scrollHeight);
+        });
+
+        // 채팅 전송하기
+        $("#chat").keydown(function(e) {
+          if ( e.key == "Enter" ) {
+            socket.emit("send", {
+              roomName: "<%=data.room_name%>",
+              me: {
+                id: "<%=data.me.id%>",
+                name: "<%=data.me.name%>",
+                point: "<%=data.me.point%>"
+              },
+              to: secretChatMember,
+              message: $("#chat").val()
+            });
+            $("#chat").val("");
+            return false;
+          }
+        });
+
+        // 접속자 받아오기
+        socket.on("getMemberList", (data) => {
+          console.log(data);
+          $(".members").html("");
+
+          for ( let member of data.members ) {
+            console.log(member);
+            let li = $(`<li data-id="${member.user.id}" data-socket-id="${member.socketId}">${member.user.name}</li>`);
+            $(".members").append(li);
+          }
+        });
+
+        let secretChatMember;   // undefined
+        $(".members").on("click", "li", function(){
+          if( $(this).css("color") == "rgb(255, 0, 0)" ) {
+            secretChatMember = undefined;
+              $(this).css({
+                color: "#000",
+                "font-weight": "normal"
+              });
+          }
+          else {
+            secretChatMember = $(this).data("socket-id");
+            $(this).css({
+              color: "#F00",
+              "font-weight": "bold"
+            });
+          }
+        });
+      });
+    </script>
+</head>
+<body>
+    <div class="">
+      <ul class="members">
+
+      </ul>
+    </div>
+    <div class="chat">
+
+    </div>
+    <div>
+      <input
+          type="hidden"
+          id="name"
+          name="name"
+          value="<%=data.me.name%>">
+      <textarea id="chat" name="chat"></textarea>
+    </div>
+</body>
+</html>
