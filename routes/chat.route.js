@@ -47,7 +47,9 @@ router.get("/:roomName", (req, res) => {
 
 router.get("/", (req, res) => {
 	const email = req.query.email;
-	const name = req.query.name;
+	const name = email.split("@")[0];
+	
+	const roomName = req.query.rm;
 	
 	req.session.USER = {
 		id: email,
@@ -59,7 +61,7 @@ router.get("/", (req, res) => {
 	const connectMember = req.app.get("connectMember");
 	res.render("chat/chat", {
 	    "data": {
-	      "room_name": 1,
+	      "room_name": roomName,
 	      "me": me
 	    }
 	});
